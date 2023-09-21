@@ -1,0 +1,59 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @copyright 2023 Benjamin Gaussorgues <benjamin.gaussorgues@nextcloud.com>
+ *
+ * @author Benjamin Gaussorgues <benjamin.gaussorgues@nextcloud.com>
+ *
+ * @license GNU AGPL version 3 or any later version
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+namespace OCP\Search;
+
+/**
+ * Interface for search providers
+ *
+ * These providers will be implemented in apps, so they can participate in the
+ * global search results of Nextcloud. If an app provides more than one type of
+ * resource, e.g. contacts and address books in Nextcloud Contacts, it should
+ * register one provider per group.
+ *
+ * @since 28.0.0
+ */
+interface IProviderV2 extends IProvider {
+	/**
+	 * Get the ID of other providers handled by this provider
+	 *
+	 * A search provider can complete results from other search providers.
+	 * For example, files and full-text-search can search in files.
+	 * If you use `in:files` in a search, provider files will be invoked,
+	 * with all other providers declaring `files` in this method
+	 *
+	 * @return string[] IDs
+	 */
+	public function getAlternateIds(): array;
+
+	/**
+	 * Return the list of filters handled by the search provider
+	 *
+	 * If a filter outside of this list is sent by client, the provider will be ignored
+	 *
+	 * @return array{string, class}
+	 */
+	public function getSupportedFilters(): array;
+}
