@@ -247,6 +247,10 @@ class ViewController extends Controller {
 		$filesSortingConfig = json_decode($this->config->getUserValue($userId, 'files', 'files_sorting_configs', '{}'), true);
 		$this->initialState->provideInitialState('filesSortingConfig', $filesSortingConfig);
 
+		// Forbidden file characters
+		$forbiddenChars = ['?', '<', '>', ':', '*', '|', '"', chr(0), "\n", "\r"];
+		$this->initialState->provideInitialState('forbiddenCharacters', $forbiddenChars);
+
 		$event = new LoadAdditionalScriptsEvent();
 		$this->eventDispatcher->dispatchTyped($event);
 		$this->eventDispatcher->dispatchTyped(new ResourcesLoadAdditionalScriptsEvent());

@@ -231,11 +231,14 @@ import CustomElementRender from './CustomElementRender.vue'
 import CustomSvgIconRender from './CustomSvgIconRender.vue'
 import FavoriteIcon from './FavoriteIcon.vue'
 import logger from '../logger.js'
+import { loadState } from '@nextcloud/initial-state'
 
 // The registered actions list
 const actions = getFileActions()
 
 Vue.directive('onClickOutside', vOnClickOutside)
+
+const forbiddenCharacters = loadState('files', 'forbiddenCharacters', [])
 
 export default Vue.extend({
 	name: 'FileEntry',
@@ -786,6 +789,9 @@ export default Vue.extend({
 				throw new Error(this.t('files', 'File name cannot be empty.'))
 			} else if (trimmedName.indexOf('/') !== -1) {
 				throw new Error(this.t('files', '"/" is not allowed inside a file name.'))
+			} else if (forbiddenCharacters.some(char => trimmedName.indexOf(char) !== -1)) {
+				const char = forbiddenCharacters.find(char => trimmedName.indexOf(char) !== -1)
+				throw new Error(this.t('files', '"{char}" is not allowed inside a file name.', { char }))
 			} else if (trimmedName.match(OC.config.blacklist_files_regex)) {
 				throw new Error(this.t('files', '"{name}" is not an allowed filetype.', { name }))
 			} else if (this.checkIfNodeExists(name)) {
