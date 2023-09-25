@@ -29,25 +29,26 @@ declare(strict_types=1);
  */
 namespace OCA\Files\Search;
 
+use OC\Files\Search\SearchBinaryOperator;
 use OC\Files\Search\SearchComparison;
 use OC\Files\Search\SearchOrder;
 use OC\Files\Search\SearchQuery;
+use OC\Search\Filter;
 use OCP\Files\FileInfo;
 use OCP\Files\IMimeTypeDetector;
 use OCP\Files\IRootFolder;
-use OCP\Files\Search\ISearchComparison;
 use OCP\Files\Node;
+use OCP\Files\Search\ISearchComparison;
 use OCP\Files\Search\ISearchOrder;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
-use OCP\Search\IProvider;
+use OCP\Search\IProviderV2;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
 use OCP\Search\SearchResultEntry;
 
-class FilesSearchProvider implements IProvider {
-
+class FilesSearchProvider implements IProviderV2 {
 	/** @var IL10N */
 	private $l10n;
 
@@ -97,21 +98,25 @@ class FilesSearchProvider implements IProvider {
 		return 5;
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	public function getAlternateIds(): array {
+		return [];
+	}
+
+	public function getSupportedFilters(): array {
+		return [
+			'term' => Filter\MultiStringFilter::class,
+			'since' => Filter\DateTimeFilter::class,
+			'until' => Filter\DateTimeFilter::class,
+			'min-size' => Filter\IntFilter::class,
+			'max-size' => Filter\IntFilter::class,
+			'mime' => Filter\StringFilter::class,
+			'type' => Filter\StringFilter::class,
+		];
+	}
+
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
 		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		$fileQuery = new SearchQuery(
-			new SearchComparison(ISearchComparison::COMPARE_LIKE, 'name', '%' . $query->getTerm() . '%'),
-			$query->getLimit(),
-			(int)$query->getCursor(),
-			$query->getSortOrder() === ISearchQuery::SORT_DATE_DESC ? [
-				new SearchOrder(ISearchOrder::DIRECTION_DESCENDING, 'mtime'),
-			] : [],
-			$user
-		);
-
+		$fileQuery = $this->buildSearchQuery($query, $user);
 		return SearchResult::paginated(
 			$this->l10n->t('Files'),
 			array_map(function (Node $result) use ($userFolder) {
@@ -138,6 +143,36 @@ class FilesSearchProvider implements IProvider {
 				return $searchResultEntry;
 			}, $userFolder->search($fileQuery)),
 			$query->getCursor() + $query->getLimit()
+		);
+	}
+
+	private function buildSearchQuery(ISearchQuery $query, IUser $user): SearchQuery {
+		$comparisons = [];
+		foreach ($query->getFilters() as $name => $filter) {
+			if ($name === 'term') {
+				foreach($filter->get() as $term) {
+					$comparisons[] = new SearchComparison(ISearchComparison::COMPARE_LIKE, 'name', '%' . $term . '%');
+				}
+				continue;
+			}
+			$comparisons[] = match ($name) {
+				'since' => new SearchComparison(ISearchComparison::COMPARE_GREATER_THAN_EQUAL, 'mtime', $filter->get()->getTimestamp()),
+				'until' => new SearchComparison(ISearchComparison::COMPARE_LESS_THAN_EQUAL, 'mtime', $filter->get()->getTimestamp()),
+				'min-size' => new SearchComparison(ISearchComparison::COMPARE_GREATER_THAN_EQUAL, 'size', $filter->get()),
+				'max-size' => new SearchComparison(ISearchComparison::COMPARE_LESS_THAN_EQUAL, 'size', $filter->get()),
+				'mime' => new SearchComparison(ISearchComparison::COMPARE_EQUAL, 'mimetype', $filter->get()),
+				'type' => new SearchComparison(ISearchComparison::COMPARE_LIKE, 'mimetype', $filter->get() . '/%'),
+			};
+		}
+
+		return new SearchQuery(
+			new SearchBinaryOperator(SearchBinaryOperator::OPERATOR_AND, $comparisons),
+			$query->getLimit(),
+			(int) $query->getCursor(),
+			$query->getSortOrder() === ISearchQuery::SORT_DATE_DESC
+				? [new SearchOrder(ISearchOrder::DIRECTION_DESCENDING, 'mtime')]
+				: [],
+			$user
 		);
 	}
 
