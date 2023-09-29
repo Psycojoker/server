@@ -198,7 +198,7 @@
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcInputField from '@nextcloud/vue/dist/Components/NcInputField.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
-import NcDatetimePicker from '@nextcloud/vue/dist/Components/NcDatetimePicker.js'
+import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import NcDateTimePickerNative from '@nextcloud/vue/dist/Components/NcDateTimePickerNative.js'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import CircleIcon from 'vue-material-design-icons/CircleOutline.vue'
@@ -232,7 +232,7 @@ export default {
 		NcAvatar,
 		NcButton,
 		NcInputField,
-		NcDatetimePicker,
+		NcDateTimePicker,
 		NcDateTimePickerNative,
 		NcCheckboxRadioSwitch,
 		CloseIcon,
