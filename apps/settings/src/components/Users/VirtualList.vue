@@ -21,42 +21,44 @@
 -->
 
 <template>
-	<table class="files-list" data-cy-files-list>
-		<!-- Header -->
-		<div ref="before" class="files-list__before">
-			<slot name="before" />
-		</div>
-
-		<!-- Header -->
-		<thead ref="thead" class="files-list__thead" data-cy-files-list-thead>
+	<table class="user-list" data-cy-user-list>
+		<thead ref="thead"
+			role="rowgroup"
+			class="user-list__header"
+			data-cy-user-list-thead>
 			<slot name="header" />
 		</thead>
 
-		<!-- Body -->
-		<tbody :style="tbodyStyle" class="files-list__tbody" data-cy-files-list-tbody>
+		<tbody :style="tbodyStyle"
+			class="user-list__body"
+			data-cy-user-list-tbody>
 			<component :is="dataComponent"
 				v-for="(item, i) in renderedItems"
 				:key="i"
 				:visible="(i >= bufferItems || index <= bufferItems) && (i < shownItems - bufferItems)"
-				:source="item"
+				:user="item"
 				:index="i"
 				v-bind="extraProps" />
 		</tbody>
 
-		<!-- Footer -->
 		<tfoot v-show="isReady"
 			ref="tfoot"
-			class="files-list__tfoot"
-			data-cy-files-list-tfoot>
+			role="rowgroup"
+			class="user-list__footer"
+			data-cy-user-list-tfoot>
 			<slot name="footer" />
 		</tfoot>
 	</table>
 </template>
 
 <script lang="ts">
-import { File, Folder, debounce } from 'debounce'
 import Vue from 'vue'
-import logger from '../logger.js'
+import { debounce } from 'debounce'
+
+import logger from '../../logger.js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type User = Record<any, any>
 
 // Items to render before and after the visible area
 const bufferItems = 3
@@ -74,7 +76,7 @@ export default Vue.extend({
 			required: true,
 		},
 		dataSources: {
-			type: Array as () => (File | Folder)[],
+			type: Array,
 			required: true,
 		},
 		itemHeight: {
@@ -85,17 +87,12 @@ export default Vue.extend({
 			type: Object,
 			default: () => ({}),
 		},
-		scrollToIndex: {
-			type: Number,
-			default: 0,
-		},
 	},
 
 	data() {
 		return {
 			bufferItems,
-			index: this.scrollToIndex,
-			beforeHeight: 0,
+			index: 0,
 			headerHeight: 0,
 			tableHeight: 0,
 			resizeObserver: null as ResizeObserver | null,
@@ -111,10 +108,12 @@ export default Vue.extend({
 		startIndex() {
 			return Math.max(0, this.index - bufferItems)
 		},
+
 		shownItems() {
 			return Math.ceil((this.tableHeight - this.headerHeight) / this.itemHeight) + bufferItems * 2
 		},
-		renderedItems(): (File | Folder)[] {
+
+		renderedItems(): User[] {
 			if (!this.isReady) {
 				return []
 			}
@@ -131,37 +130,24 @@ export default Vue.extend({
 			}
 		},
 	},
-	watch: {
-		scrollToIndex() {
-			this.index = this.scrollToIndex
-			this.$el.scrollTop = this.index * this.itemHeight + this.beforeHeight
-		},
-	},
 
 	mounted() {
-		const before = this.$refs?.before as HTMLElement
 		const root = this.$el as HTMLElement
 		const tfoot = this.$refs?.tfoot as HTMLElement
 		const thead = this.$refs?.thead as HTMLElement
 
 		this.resizeObserver = new ResizeObserver(debounce(() => {
-			this.beforeHeight = before?.clientHeight ?? 0
 			this.headerHeight = thead?.clientHeight ?? 0
 			this.tableHeight = root?.clientHeight ?? 0
 			logger.debug('VirtualList resizeObserver updated')
 			this.onScroll()
 		}, 100, false))
 
-		this.resizeObserver.observe(before)
 		this.resizeObserver.observe(root)
 		this.resizeObserver.observe(tfoot)
 		this.resizeObserver.observe(thead)
 
 		this.$el.addEventListener('scroll', this.onScroll)
-
-		if (this.scrollToIndex) {
-			this.$el.scrollTop = this.index * this.itemHeight + this.beforeHeight
-		}
 	},
 
 	beforeDestroy() {
@@ -173,12 +159,16 @@ export default Vue.extend({
 	methods: {
 		onScroll() {
 			// Max 0 to prevent negative index
-			this.index = Math.max(0, Math.round((this.$el.scrollTop - this.beforeHeight) / this.itemHeight))
+			this.index = Math.max(0, Math.round(this.$el.scrollTop / this.itemHeight))
+
+			if (this.index >= this.dataSources.length) {
+				this.$emit('scroll-end')
+			}
 		},
 	},
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 
 </style>

@@ -41,51 +41,41 @@
 			</template>
 		</NcEmptyContent>
 
-		<RecycleScroller v-else
-			ref="scroller"
-			class="user-list"
+		<VirtualList :data-component="UserRow"
 			:style="style"
-			:items="filteredUsers"
-			key-field="id"
-			role="table"
-			list-tag="tbody"
-			list-class="user-list__body"
-			item-tag="tr"
-			item-class="user-list__row"
-			:item-size="rowHeight"
-			@hook:mounted="handleMounted"
+			data-key="id"
+			:data-sources="filteredUsers"
+			:item-height="rowHeight"
+			:extra-props="{
+				users,
+				settings,
+				hasObfuscated,
+				groups,
+				subAdminsGroups,
+				quotaOptions,
+				languages,
+				externalActions,
+			}"
 			@scroll-end="handleScrollEnd">
-			<template #before>
+			<template #header>
 				<caption class="hidden-visually">
 					{{ t('settings', 'List of users. This list is not fully rendered for performance reasons. The users will be rendered as you navigate through the list.') }}
 				</caption>
 				<UserListHeader :has-obfuscated="hasObfuscated" />
 			</template>
 
-			<template #default="{ item: user }">
-				<UserRow :user="user"
-					:users="users"
-					:settings="settings"
-					:has-obfuscated="hasObfuscated"
-					:groups="groups"
-					:sub-admins-groups="subAdminsGroups"
-					:quota-options="quotaOptions"
-					:languages="languages"
-					:external-actions="externalActions" />
-			</template>
-
-			<template #after>
+			<template #footer>
 				<UserListFooter :loading="loading.users"
 					:filtered-users="filteredUsers" />
 			</template>
-		</RecycleScroller>
+		</VirtualList>
 	</Fragment>
 </template>
 
 <script>
 import Vue from 'vue'
 import { Fragment } from 'vue-frag'
-import { RecycleScroller } from 'vue-virtual-scroller'
+// import { RecycleScroller } from 'vue-virtual-scroller'
 
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcIconSvgWrapper from '@nextcloud/vue/dist/Components/NcIconSvgWrapper.js'
@@ -94,6 +84,7 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import { subscribe, unsubscribe } from '@nextcloud/event-bus'
 import { showError } from '@nextcloud/dialogs'
 
+import VirtualList from './Users/VirtualList.vue'
 import NewUserModal from './Users/NewUserModal.vue'
 import UserListFooter from './Users/UserListFooter.vue'
 import UserListHeader from './Users/UserListHeader.vue'
@@ -128,10 +119,9 @@ export default {
 		NcIconSvgWrapper,
 		NcLoadingIcon,
 		NewUserModal,
-		RecycleScroller,
 		UserListFooter,
 		UserListHeader,
-		UserRow,
+		VirtualList,
 	},
 
 	props: {
@@ -147,6 +137,7 @@ export default {
 
 	data() {
 		return {
+			UserRow,
 			loading: {
 				all: false,
 				groups: false,
@@ -295,16 +286,6 @@ export default {
 	},
 
 	methods: {
-		async handleMounted() {
-			// Add proper semantics to the recycle scroller slots
-			const header = this.$refs.scroller.$refs.before
-			const footer = this.$refs.scroller.$refs.after
-			header.classList.add('user-list__header')
-			header.setAttribute('role', 'rowgroup')
-			footer.classList.add('user-list__footer')
-			footer.setAttribute('role', 'rowgroup')
-		},
-
 		async handleScrollEnd() {
 			await this.loadUsers()
 		},

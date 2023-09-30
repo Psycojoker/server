@@ -24,7 +24,7 @@
   -->
 
 <template>
-	<Fragment>
+	<tr class="user-list__row">
 		<td class="row__cell row__cell--avatar">
 			<NcLoadingIcon v-if="isLoadingUser"
 				:name="t('settings', 'Loading user …')"
@@ -272,12 +272,11 @@
 				:edit="idState.editing"
 				@update:edit="toggleEdit" />
 		</td>
-	</Fragment>
+	</tr>
 </template>
 
 <script>
-import { Fragment } from 'vue-frag'
-import { IdState } from 'vue-virtual-scroller'
+// import { IdState } from 'vue-virtual-scroller'
 import { getCurrentUser } from '@nextcloud/auth'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
@@ -296,7 +295,6 @@ export default {
 	name: 'UserRow',
 
 	components: {
-		Fragment,
 		NcAvatar,
 		NcLoadingIcon,
 		NcProgressBar,
@@ -306,14 +304,6 @@ export default {
 	},
 
 	mixins: [
-		/**
-		 * Use scoped `idState` instead of `data` which is reused between rows
-		 *
-		 * See https://github.com/Akryum/vue-virtual-scroller/tree/v1/packages/vue-virtual-scroller#why-is-this-useful
-		 */
-		IdState({
-			idProp: vm => vm.user.id,
-		}),
 		UserRowMixin,
 	],
 
