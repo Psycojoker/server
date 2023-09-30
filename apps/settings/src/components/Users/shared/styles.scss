@@ -21,8 +21,9 @@
  */
 
 @mixin row {
-	position: absolute;
+	position: relative;
 	display: flex;
+	width: fit-content;
 	height: var(--row-height);
 	background-color: var(--color-main-background);
 }

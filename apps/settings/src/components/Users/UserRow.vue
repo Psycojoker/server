@@ -30,7 +30,6 @@
 				:name="t('settings', 'Loading user …')"
 				:size="32" />
 			<NcAvatar v-else
-				:key="user.id"
 				disable-menu
 				:show-user-status="false"
 				:user="user.id" />

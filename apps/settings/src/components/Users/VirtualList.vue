@@ -22,6 +22,8 @@
 
 <template>
 	<table class="user-list" data-cy-user-list>
+		<slot name="before" />
+
 		<thead ref="thead"
 			role="rowgroup"
 			class="user-list__header"
@@ -170,5 +172,17 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
+.user-list__header,
+.user-list__footer {
+	position: sticky;
+}
 
+.user-list__header {
+	top: 0;
+	z-index: 20;
+}
+
+.user-list__footer {
+	left: 0;
+}
 </style>

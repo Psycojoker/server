@@ -57,10 +57,12 @@
 				externalActions,
 			}"
 			@scroll-end="handleScrollEnd">
-			<template #header>
+			<template #before>
 				<caption class="hidden-visually">
 					{{ t('settings', 'List of users. This list is not fully rendered for performance reasons. The users will be rendered as you navigate through the list.') }}
 				</caption>
+			</template>
+			<template #header>
 				<UserListHeader :has-obfuscated="hasObfuscated" />
 			</template>
 
@@ -428,22 +430,6 @@ export default {
 						background-color: var(--color-background-hover);
 					}
 				}
-			}
-		}
-
-		.vue-recycle-scroller__slot {
-			&.user-list__header,
-			&.user-list__footer {
-				position: sticky;
-			}
-
-			&.user-list__header {
-				top: 0;
-				z-index: 10;
-			}
-
-			&.user-list__footer {
-				left: 0;
 			}
 		}
 	}
