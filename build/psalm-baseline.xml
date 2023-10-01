@@ -439,9 +439,6 @@
     </InvalidNullableReturnType>
   </file>
   <file src="apps/dav/lib/CardDAV/PhotoCache.php">
-    <InvalidNullableReturnType>
-      <code>string</code>
-    </InvalidNullableReturnType>
     <LessSpecificReturnStatement>
       <code><![CDATA[[
 				'Content-Type' => $type,
@@ -451,9 +448,6 @@
     <MoreSpecificReturnType>
       <code>false|array{body: string, Content-Type: string}</code>
     </MoreSpecificReturnType>
-    <NullableReturnStatement>
-      <code>$type</code>
-    </NullableReturnStatement>
   </file>
   <file src="apps/dav/lib/CardDAV/Plugin.php">
     <ImplementedReturnTypeMismatch>
@@ -541,7 +535,6 @@
   <file src="apps/dav/lib/Connector/Sabre/FilesReportPlugin.php">
     <InvalidArgument>
       <code>0</code>
-      <code>200</code>
     </InvalidArgument>
     <InvalidNullableReturnType>
       <code>bool</code>
@@ -1934,7 +1927,6 @@
     </InvalidReturnStatement>
     <InvalidReturnType>
       <code>\OCP\IServerContainer</code>
-      <code>mixed</code>
     </InvalidReturnType>
     <UndefinedInterfaceMethod>
       <code>getAppDataDir</code>
@@ -2201,9 +2193,7 @@
     </ParamNameMismatch>
   </file>
   <file src="lib/private/Command/ClosureJob.php">
-    <InvalidArgument>
-      <code>[LaravelClosure::class, OpisClosure::class]</code>
-    </InvalidArgument>
+    <InvalidArgument/>
     <ParamNameMismatch>
       <code>$serializedCallable</code>
     </ParamNameMismatch>
