@@ -6,17 +6,25 @@ namespace OC\FilesMetadata;
 
 use OC\FilesMetadata\Event\FilesMetadataEvent;
 use OC\FilesMetadata\Model\FilesMetadata;
+use OCP\DB\Exception;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\FilesMetadata\Exceptions\FilesMetadataNotFoundException;
 use OCP\FilesMetadata\IFilesMetadata;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\IFilesMetadataQueryHelper;
+use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
 
 class FilesMetadataManager implements IFilesMetadataManager {
+	public const TABLE_METADATA = 'files_metadata';
+	public const TABLE_METADATA_INDEX = 'files_metadata_index';
 
 	public function __construct(
+		private IDBConnection $dbConnection,
 		private IEventDispatcher $eventDispatcher,
 		private FilesMetadataQueryHelper $filesMetadataQueryHelper,
+		private LoggerInterface $logger
 	) {
 	}
 
@@ -28,7 +36,7 @@ class FilesMetadataManager implements IFilesMetadataManager {
 		$metadata = null;
 		if (!$fromScratch) {
 			try {
-				$metadata = $this->getMetadataFromDatabase($fileId);
+				$metadata = $this->selectMetadata($fileId);
 			} catch (FilesMetadataNotFoundException $e) {
 			}
 		}
@@ -53,7 +61,7 @@ class FilesMetadataManager implements IFilesMetadataManager {
 	 */
 	public function getMetadata(int $fileId, bool $createIfNeeded = false): IFilesMetadata {
 		try {
-			return $this->getMetadataFromDatabase($fileId);
+			return $this->selectMetadata($fileId);
 		} catch (FilesMetadataNotFoundException $e) {
 			if ($createIfNeeded) {
 				return $this->refreshMetadata($fileId, true);
@@ -63,31 +71,21 @@ class FilesMetadataManager implements IFilesMetadataManager {
 		}
 	}
 
-	/**
-	 * @param int $fileId
-	 *
-	 * @return IFilesMetadata
-	 * @throws FilesMetadataNotFoundException
-	 */
-	public function getMetadataFromDatabase(int $fileId): IFilesMetadata {
-		$metadata = new FilesMetadata($fileId);
-		throw new FilesMetadataNotFoundException();
-
-		$json = '[]'; // get json from database;
-		// if entry exist in database.
-		$metadata->import($json);
-
-		return $metadata;
-	}
-
 
 	public function saveMetadata(IFilesMetadata $filesMetadata): void {
 		if ($filesMetadata->getFileId() === 0) {
 			return;
 		}
 
-		// database thing ...
-		// try to update first, if no update, insert as new
+		// update first, and insert if no row affected
+		try {
+			if (!$this->updateMetadata($filesMetadata)) {
+				$this->insertMetadata($filesMetadata);
+			}
+		} catch (Exception $e) {
+			$this->logger->warning('exception while saveMetadata()', ['exception' => $e]);
+			return;
+		}
 
 		// remove indexes from metadata_index that are not in the list of indexes anymore.
 		foreach ($filesMetadata->listIndexes() as $index) {
@@ -100,4 +98,59 @@ class FilesMetadataManager implements IFilesMetadataManager {
 	public function getQueryHelper(): IFilesMetadataQueryHelper {
 		return $this->filesMetadataQueryHelper;
 	}
+
+	public function insertMetadata(IFilesMetadata $filesMetadata): void {
+		$qb = $this->dbConnection->getQueryBuilder();
+		$qb->insert(self::TABLE_METADATA)
+		   ->setValue('file_id', $qb->createNamedParameter($filesMetadata->getFileId(), IQueryBuilder::PARAM_INT))
+		   ->setValue('json', $qb->createNamedParameter(json_encode($filesMetadata->jsonSerialize())))
+		   ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($filesMetadata->getFileId(), IQueryBuilder::PARAM_INT)));
+		$qb->executeStatement();
+	}
+
+	/**
+	 * @param IFilesMetadata $filesMetadata
+	 *
+	 * @return bool
+	 * @throws Exception
+	 */
+	public function updateMetadata(IFilesMetadata $filesMetadata): bool {
+		// TODO check sync_token on update
+		$qb = $this->dbConnection->getQueryBuilder();
+		$qb->update(self::TABLE_METADATA)
+			->set('json', $qb->createNamedParameter(json_encode($filesMetadata->jsonSerialize())))
+			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($filesMetadata->getFileId(), IQueryBuilder::PARAM_INT)));
+		return ($qb->executeStatement() > 0);
+	}
+
+
+	/**
+	 * @param int $fileId
+	 *
+	 * @return IFilesMetadata
+	 * @throws FilesMetadataNotFoundException
+	 */
+	private function selectMetadata(int $fileId): IFilesMetadata {
+		try {
+			$qb = $this->dbConnection->getQueryBuilder();
+			$qb->select('json')->from(self::TABLE_METADATA);
+			$qb->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+			$result = $qb->executeQuery();
+			$data = $result->fetch();
+			$result->closeCursor();
+		} catch (Exception $e) {
+			$this->logger->warning('exception while getMetadataFromDatabase()', ['exception' => $e, 'fileId' => $fileId]);
+			throw new FilesMetadataNotFoundException();
+		}
+
+		if ($data === false) {
+			throw new FilesMetadataNotFoundException();
+		}
+
+		$metadata = new FilesMetadata($fileId);
+		$metadata->import($data['json'] ?? '');
+
+		return $metadata;
+	}
+
 }
