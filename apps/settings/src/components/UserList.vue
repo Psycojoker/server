@@ -410,14 +410,6 @@ export default {
 
 	:deep {
 		.user-list {
-			&__body {
-				display: flex;
-				flex-direction: column;
-				width: 100%;
-				// Necessary for virtual scrolling absolute
-				position: relative;
-			}
-
 			&__row {
 				@include row;
 				border-bottom: 1px solid var(--color-border);

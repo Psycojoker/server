@@ -179,17 +179,27 @@ export default Vue.extend({
 </script>
 
 <style lang="scss" scoped>
-.user-list__header,
-.user-list__footer {
-	position: sticky;
-}
+.user-list {
+	&__header,
+	&__footer {
+		position: sticky;
+	}
 
-.user-list__header {
-	top: 0;
-	z-index: 20;
-}
+	&__header {
+		top: 0;
+		z-index: 20;
+	}
 
-.user-list__footer {
-	left: 0;
+	&__footer {
+		left: 0;
+	}
+
+	&__body {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		// Necessary for virtual scrolling absolute
+		position: relative;
+	}
 }
 </style>
