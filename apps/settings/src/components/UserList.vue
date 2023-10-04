@@ -416,7 +416,6 @@ export default {
 				width: 100%;
 				// Necessary for virtual scrolling absolute
 				position: relative;
-				margin-top: var(--row-height);
 			}
 
 			&__row {
