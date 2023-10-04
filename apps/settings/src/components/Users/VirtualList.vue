@@ -45,6 +45,7 @@
 
 		<tfoot v-show="isReady"
 			ref="tfoot"
+			v-element-visibility="onFooterVisibility"
 			role="rowgroup"
 			class="user-list__footer"
 			data-cy-user-list-tfoot>
@@ -55,9 +56,13 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { vElementVisibility } from '@vueuse/components'
+
 import { debounce } from 'debounce'
 
 import logger from '../../logger.js'
+
+Vue.directive('elementVisibility', vElementVisibility)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type User = Record<any, any>
@@ -159,13 +164,15 @@ export default Vue.extend({
 	},
 
 	methods: {
+		onFooterVisibility(visible: boolean) {
+			if (visible) {
+				this.$emit('scroll-end')
+			}
+		},
+
 		onScroll() {
 			// Max 0 to prevent negative index
 			this.index = Math.max(0, Math.round(this.$el.scrollTop / this.itemHeight))
-
-			if (this.index >= this.dataSources.length) {
-				this.$emit('scroll-end')
-			}
 		},
 	},
 })
